@@ -1,0 +1,57 @@
+{
+  "attributes": [{
+      "name": "Name",
+      "key": "entity_name",
+      "default": true
+    },
+    {
+      "name": "Service",
+      "key": "service",
+      "default": true
+    },
+    {
+      "name": "Date and Time",
+      "key": "created_at",
+      "default": true
+    },
+    {
+      "name": "Action",
+      "key": "action",
+      "default": true
+    },
+    {
+      "name": "Entity",
+      "key": "entity",
+      "default": true
+    },
+    {
+      "name": "System IP address",
+      "key": "ip_address",
+      "default": false
+    },
+    {
+      "name": "Location",
+      "key": "country",
+      "default": false
+    }
+  ],
+  "page_sizes": [{
+      "name": "50 Per page",
+      "key": "page",
+      "value": 50,
+      "default": true
+    },
+    {
+      "name": "100 Per page",
+      "key": "page",
+      "value": 100,
+      "default": false
+    },
+    {
+      "name": "150 Per page",
+      "key": "page",
+      "value": 150,
+      "default": false
+    }
+  ]
+}

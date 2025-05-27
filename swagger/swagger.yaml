@@ -1,0 +1,4127 @@
+openapi: 3.0.1
+info:
+  title: Boilerplate
+  version: 1.0.0
+  description: Javascript boilerplate code for Notes API
+  contact:
+    name: Yapsody India Private Limited
+paths:
+  /notes:
+    get:
+      tags:
+        - Notes
+      summary: Get notes
+      description: This will return a list of notes.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: page_no
+          in: query
+          required: false
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            minimum: 1
+            type: integer
+            default: 100
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            pattern: '[a-z]'
+            default: created_at
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 4
+            pattern: '[a-z]'
+            enum:
+              - asc
+              - desc
+            default: desc
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+              - 2
+        - name: search
+          in: query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 255
+        - name: ids
+          in: query
+          schema:
+            type: string
+            minLength: 0
+            maxLength: 255
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      notes:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - id
+                            - account_id
+                            - name
+                            - description
+                            - version
+                            - status
+                            - deleted
+                            - created_at
+                            - updated_at
+                          properties:
+                            id:
+                              type: number
+                            account_id:
+                              type: number
+                            name:
+                              type: string
+                              minLength: 1
+                            description:
+                              type: string
+                              minLength: 1
+                            version:
+                              type: number
+                            status:
+                              type: number
+                            deleted:
+                              type: number
+                            created_at:
+                              type: string
+                              minLength: 1
+                            updated_at:
+                              type: string
+                              minLength: 1
+                            deleted_at: {}
+                    required:
+                      - notes
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      notes:
+                        - id: 1
+                          account_id: 1
+                          name: string
+                          description: string
+                          version: 1
+                          status: 1
+                          deleted: 0
+                          created_at: '2021-08-25T09:34:42.000Z'
+                          updated_at: '2021-08-25T09:34:42.000Z'
+                          deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:49:58.847Z'
+              examples:
+                GetNotes:
+                  value:
+                    data:
+                      notes:
+                        - id: 1
+                          account_id: 1
+                          name: string
+                          description: string
+                          version: 1
+                          status: 1
+                          deleted: 0
+                          created_at: '2021-08-25T09:34:42.000Z'
+                          updated_at: '2021-08-25T09:34:42.000Z'
+                          deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:49:58.847Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: any.required
+                          message: '"Whitelabel Id" is required'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:25:01.254Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: any.required
+                          message: '"Whitelabel Id" is required'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:25:01.254Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: GetNotes
+    post:
+      tags:
+        - Notes
+      summary: Add note
+      description: This api creates a new note with provided body.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddNote'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          created_at:
+                            type: string
+                            minLength: 1
+                        required:
+                          - version
+                          - status
+                          - deleted
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - updated_at
+                          - created_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        updated_at: '2021-08-25T09:34:42.785Z'
+                        created_at: '2021-08-25T09:34:42.785Z'
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:34:42.919Z'
+              examples:
+                AddNote:
+                  value:
+                    data:
+                      note:
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        updated_at: '2021-08-25T09:34:42.785Z'
+                        created_at: '2021-08-25T09:34:42.785Z'
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:34:42.919Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - key
+                            - type
+                            - message
+                          properties:
+                            key:
+                              type: string
+                              minLength: 1
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - key: name
+                          type: string.base
+                          message: '"Name" must be a string'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:35:47.733Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - key: name
+                          type: string.base
+                          message: '"Name" must be a string'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:35:47.733Z'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 409
+                      key: NoteConflict
+                      message: Note with name string already exists
+                      message_presets: {}
+                      recovery:
+                        message: Note with name string already exists
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:45:11.359Z'
+              examples:
+                NoteConflict:
+                  value:
+                    error:
+                      code: 409
+                      key: NoteConflict
+                      message: Note with name string already exists
+                      message_presets: {}
+                      recovery:
+                        message: Note with name string already exists
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:45:11.359Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: AddNote
+  /notes/count:
+    get:
+      tags:
+        - Notes
+      summary: Get notes count
+      description: This will return a count of notes.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
+              - 2
+        - name: search
+          in: query
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 255
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: number
+                    required:
+                      - count
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      count: 1
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:52:03.434Z'
+              examples:
+                GetNotesCount:
+                  value:
+                    data:
+                      count: 1
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:52:03.434Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: any.required
+                          message: '"Whitelabel Id" is required'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:25:01.254Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: any.required
+                          message: '"Whitelabel Id" is required'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:25:01.254Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: GetNotesCount
+  '/notes/{noteId}':
+    get:
+      tags:
+        - Notes
+      summary: Describe Note
+      description: This will return a note with provided id.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          created_at:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          deleted_at: {}
+                        required:
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - version
+                          - status
+                          - deleted
+                          - created_at
+                          - updated_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+              examples:
+                GetNote:
+                  value:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 404
+                      key: NotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: GetNote
+    put:
+      tags:
+        - Notes
+      summary: Update Note
+      description: This api returns updated note with provided id after updating with provided body.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - schema:
+            type: string
+          in: query
+          name: enable
+          description: 'true: Enables note; false: Disables N'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          created_at:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          deleted_at: {}
+                        required:
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - version
+                          - status
+                          - deleted
+                          - created_at
+                          - updated_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: updated string
+                        version: 2
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T12:24:37.726Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:24:37.806Z'
+              examples:
+                UpdateNoteResponse:
+                  value:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: updated string
+                        version: 2
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T12:24:37.726Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:24:37.806Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '412':
+          description: PRECONDITION FAILED
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                x-examples:
+                  example-1:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: 'object has been updated since you last opened, do you want to reload the new version or overwrite existing changes done?'
+                      message_presets: {}
+                      recovery:
+                        message: 'object has been updated since you last opened, do you want to reload the new version or overwrite existing changes done?'
+                        message_presets: {}
+                        options: []
+                      difference:
+                        version: 2
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:25:54.286Z'
+                properties:
+                  error:
+                    type: object
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                      recovery:
+                        type: object
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                          options:
+                            type: array
+                            items:
+                              type: object
+                      difference:
+                        type: object
+                  meta:
+                    type: object
+                    required:
+                      - version
+                      - timestamp
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                required:
+                  - error
+                  - meta
+              examples:
+                UpdateConflict:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: 'object has been updated since you last opened, do you want to reload the new version or overwrite existing changes done?'
+                      message_presets: {}
+                      recovery:
+                        message: 'object has been updated since you last opened, do you want to reload the new version or overwrite existing changes done?'
+                        message_presets: {}
+                        options: []
+                      difference:
+                        version: 2
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:25:54.286Z'
+                AlreadyEnabledError:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only disabled note can be enabled
+                      message_presets: {}
+                      recovery:
+                        message: Only disabled note can be enabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:27:18.839Z'
+                AlreadyDisabled:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only enabled note can be disabled
+                      message_presets: {}
+                      recovery:
+                        message: Only enabled note can be disabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:28:04.339Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: UpdateNote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              description: ''
+              type: object
+              x-examples:
+                example-1:
+                  name: string
+                  description: updated string
+                  version: 1
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                description:
+                  type: string
+                  minLength: 1
+                version:
+                  type: number
+              required:
+                - version
+            examples:
+              UpdateNote:
+                value:
+                  name: string
+                  description: updated string
+                  version: 1
+    delete:
+      tags:
+        - Notes
+      summary: Delete note
+      description: This will delete a note by provided id.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: force_update
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '412':
+          description: PRECONDITION FAILED
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Enabled note can't be deleted
+                      message_presets: {}
+                      recovery:
+                        message: Enabled note can't be deleted
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:34:56.557Z'
+              examples:
+                PreconditionFailed:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Enabled note can't be deleted
+                      message_presets: {}
+                      recovery:
+                        message: Enabled note can't be deleted
+                        message_presets: {}
+                        options:
+                          - name: force
+                            preset_key: common_cancel_btn
+                            is_default: 'false'
+                            recovery_param:
+                              method: delete
+                              path: /notes/1
+                              params: force_update=true
+                              body: ''
+                          - name: cancel
+                            preset_key: common_cancel_btn
+                            is_default: 'true'
+                            recovery_param: {}
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:34:56.557Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: DeleteNote
+  '/notes/{noteId}/enable':
+    put:
+      tags:
+        - Notes
+      summary: Enable note
+      description: This api enables a note with provided id.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          created_at:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          deleted_at: {}
+                        required:
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - version
+                          - status
+                          - deleted
+                          - created_at
+                          - updated_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+              examples:
+                EnabledNote:
+                  value:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '412':
+          description: PRECONDITION FAILED
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only disabled note can be enabled
+                      message_presets: {}
+                      recovery:
+                        message: Only disabled note can be enabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:27:18.839Z'
+              examples:
+                AlreadyEnabledError:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only disabled note can be enabled
+                      message_presets: {}
+                      recovery:
+                        message: Only disabled note can be enabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:27:18.839Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: EnableNote
+  '/notes/{noteId}/disable':
+    put:
+      tags:
+        - Notes
+      summary: Disable note
+      description: This api disables a note with provided id.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          created_at:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          deleted_at: {}
+                        required:
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - version
+                          - status
+                          - deleted
+                          - created_at
+                          - updated_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 2
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+              examples:
+                DisabledNote:
+                  value:
+                    data:
+                      note:
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        version: 1
+                        status: 2
+                        deleted: 0
+                        created_at: '2021-08-25T09:34:42.000Z'
+                        updated_at: '2021-08-25T09:34:42.000Z'
+                        deleted_at: null
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:10:51.170Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '412':
+          description: PRECONDITION FAILED
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only enabled note can be disabled
+                      message_presets: {}
+                      recovery:
+                        message: Only enabled note can be disabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:28:04.339Z'
+              examples:
+                AlreadyDisabledError:
+                  value:
+                    error:
+                      code: 412
+                      key: PreconditionFailed
+                      message: Only enabled note can be disabled
+                      message_presets: {}
+                      recovery:
+                        message: Only enabled note can be disabled
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:28:04.339Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: DisableNote
+  '/notes/{noteId}/copy-names':
+    get:
+      tags:
+        - Notes
+      summary: Suggest name
+      description: This api suggests a note name.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        minLength: 1
+                    required:
+                      - name
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      name: string (1)
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:54:15.551Z'
+              examples:
+                SuggestCopyName:
+                  value:
+                    data:
+                      name: string (1)
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:54:15.551Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: SuggestCopyName
+    parameters:
+      - schema:
+          type: integer
+        name: noteId
+        in: path
+        required: true
+  '/notes/{noteId}/copy':
+    post:
+      tags:
+        - Notes
+      summary: Suggest name
+      description: This api clones a note
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      note:
+                        type: object
+                        properties:
+                          version:
+                            type: number
+                          status:
+                            type: number
+                          deleted:
+                            type: number
+                          id:
+                            type: number
+                          account_id:
+                            type: number
+                          name:
+                            type: string
+                            minLength: 1
+                          description:
+                            type: string
+                            minLength: 1
+                          updated_at:
+                            type: string
+                            minLength: 1
+                          created_at:
+                            type: string
+                            minLength: 1
+                        required:
+                          - version
+                          - status
+                          - deleted
+                          - id
+                          - account_id
+                          - name
+                          - description
+                          - updated_at
+                          - created_at
+                    required:
+                      - note
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      note:
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        updated_at: '2021-08-25T09:34:42.785Z'
+                        created_at: '2021-08-25T09:34:42.785Z'
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:34:42.919Z'
+              examples:
+                CopyNote:
+                  value:
+                    data:
+                      note:
+                        version: 1
+                        status: 1
+                        deleted: 0
+                        id: 1
+                        account_id: 1
+                        name: string
+                        description: string
+                        updated_at: '2021-08-25T09:34:42.785Z'
+                        created_at: '2021-08-25T09:34:42.785Z'
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:34:42.919Z'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      fields:
+                        type: array
+                        uniqueItems: true
+                        minItems: 1
+                        items:
+                          required:
+                            - type
+                            - message
+                          properties:
+                            type:
+                              type: string
+                              minLength: 1
+                            message:
+                              type: string
+                              minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - fields
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+              examples:
+                ValidationError:
+                  value:
+                    error:
+                      code: 400
+                      key: ValidationError
+                      message: ValidationError
+                      fields:
+                        - type: number.base
+                          message: '"Id" must be a number'
+                      message_presets: {}
+                      recovery:
+                        message: ValidationError
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:31:57.827Z'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+              examples:
+                NoteNotFound:
+                  value:
+                    error:
+                      code: 404
+                      key: NoteNotFound
+                      message: Note Not Found
+                      message_presets: {}
+                      recovery:
+                        message: Note Not Found
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T11:32:36.468Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: number
+                      key:
+                        type: string
+                        minLength: 1
+                      message:
+                        type: string
+                        minLength: 1
+                      message_presets:
+                        type: object
+                        properties: {}
+                      recovery:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            minLength: 1
+                          message_presets:
+                            type: object
+                            properties: {}
+                          options:
+                            type: array
+                            items:
+                              properties: {}
+                        required:
+                          - message
+                          - message_presets
+                          - options
+                    required:
+                      - code
+                      - key
+                      - message
+                      - message_presets
+                      - recovery
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - error
+                  - meta
+                x-examples:
+                  example-1:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: CopyNote
+    parameters:
+      - schema:
+          type: integer
+        name: noteId
+        in: path
+        required: true
+  /notes/display-settings:
+    get:
+      tags:
+        - Notes
+      summary: Describe note display settings
+      description: This api will get config.
+      parameters:
+        - name: whitelabel-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: account-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+        - name: user-id
+          in: header
+          required: true
+          schema:
+            minimum: 1
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                description: ''
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      config:
+                        type: object
+                        properties:
+                          attributes:
+                            type: array
+                            uniqueItems: true
+                            minItems: 1
+                            items:
+                              required:
+                                - name
+                                - key
+                                - default
+                              properties:
+                                name:
+                                  type: string
+                                  minLength: 1
+                                key:
+                                  type: string
+                                  minLength: 1
+                                default:
+                                  type: boolean
+                          page_sizes:
+                            type: array
+                            uniqueItems: true
+                            minItems: 1
+                            items:
+                              required:
+                                - name
+                                - key
+                                - value
+                                - default
+                              properties:
+                                name:
+                                  type: string
+                                  minLength: 1
+                                key:
+                                  type: string
+                                  minLength: 1
+                                value:
+                                  type: number
+                                default:
+                                  type: boolean
+                        required:
+                          - attributes
+                          - page_sizes
+                    required:
+                      - config
+                  meta:
+                    type: object
+                    properties:
+                      version:
+                        type: number
+                      timestamp:
+                        type: string
+                        minLength: 1
+                    required:
+                      - version
+                      - timestamp
+                required:
+                  - data
+                  - meta
+                x-examples:
+                  example-1:
+                    data:
+                      config:
+                        attributes:
+                          - name: Name
+                            key: entity_name
+                            default: true
+                        page_sizes:
+                          - name: 50 Per page
+                            key: page
+                            value: 50
+                            default: true
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:56:22.975Z'
+              examples:
+                DisplaySettings:
+                  value:
+                    data:
+                      config:
+                        attributes:
+                          - name: Name
+                            key: entity_name
+                            default: true
+                          - name: Service
+                            key: service
+                            default: true
+                          - name: Date and Time
+                            key: created_at
+                            default: true
+                          - name: Action
+                            key: action
+                            default: true
+                          - name: Entity
+                            key: entity
+                            default: true
+                          - name: System IP address
+                            key: ip_address
+                            default: false
+                          - name: Location
+                            key: country
+                            default: false
+                        page_sizes:
+                          - name: 50 Per page
+                            key: page
+                            value: 50
+                            default: true
+                          - name: 100 Per page
+                            key: page
+                            value: 100
+                            default: false
+                          - name: 150 Per page
+                            key: page
+                            value: 150
+                            default: false
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T12:56:22.975Z'
+        '500':
+          description: ERROR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/500'
+              examples:
+                InternalServerError:
+                  value:
+                    error:
+                      code: 500
+                      key: InternalServerError
+                      message: Internal Server Error
+                      message_presets: {}
+                      recovery:
+                        message: Internal Server Error
+                        message_presets: {}
+                        options: []
+                    meta:
+                      version: 1
+                      timestamp: '2021-08-25T09:30:07.050Z'
+      operationId: DisplaySettings
+components:
+  schemas:
+    '400':
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 400
+            message:
+              type: string
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+    '404':
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 404
+            message:
+              type: string
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+    '412':
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              example: 412
+            message:
+              type: string
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+    '500':
+      description: ''
+      type: object
+      x-examples:
+        example-1:
+          error:
+            code: 500
+            key: SequelizeConnectionRefusedError
+            message: Internal Server Error
+            message_presets: {}
+            recovery:
+              message: Internal Server Error
+              message_presets: {}
+              options: []
+          meta:
+            version: 1
+            timestamp: '2021-08-25T09:30:07.050Z'
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - key
+            - message
+            - message_presets
+          properties:
+            code:
+              type: number
+            key:
+              type: string
+              minLength: 1
+            message:
+              type: string
+              minLength: 1
+            message_presets:
+              type: object
+            recovery:
+              type: object
+              required:
+                - message
+                - message_presets
+                - options
+              properties:
+                message:
+                  type: string
+                  minLength: 1
+                message_presets:
+                  type: object
+                options:
+                  type: array
+                  items:
+                    type: object
+        meta:
+          type: object
+          required:
+            - version
+            - timestamp
+          properties:
+            version:
+              type: number
+            timestamp:
+              type: string
+              minLength: 1
+      required:
+        - error
+        - meta
+    MetaDefinition:
+      type: object
+      properties:
+        version:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+    Count:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            count:
+              type: number
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+    AddNote:
+      type: object
+      properties:
+        name:
+          type: string
+          minimum: 3
+          maximum: 255
+        description:
+          type: string
+          minimum: 3
+          maximum: 255
+    NoteResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            note:
+              type: object
+              properties:
+                id:
+                  type: number
+                account_id:
+                  type: number
+                name:
+                  type: string
+                description:
+                  type: string
+                status:
+                  type: number
+                deleted:
+                  type: number
+                created_at:
+                  type: string
+                  format: date-time
+                updated_at:
+                  type: string
+                  format: date-time
+                deleted_at:
+                  type: string
+                  format: date-time
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+    NotesListResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            notes:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: number
+                  account_id:
+                    type: number
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  status:
+                    type: number
+                  deleted:
+                    type: number
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                  deleted_at:
+                    type: string
+                    format: date-time
+        meta:
+          $ref: '#/components/schemas/MetaDefinition'
+servers:
+  - url: 'https://yap-dev.yapsody.com/v1/notes'
+    description: yap-dev
+  - url: 'https://yap-stage.yapsody.com/v1/notes'
+    description: yap-stage
+tags:
+  - name: Notes

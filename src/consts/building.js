@@ -1,0 +1,34 @@
+module.exports = [{
+  pr: 'IBL_MAIN_PR',
+  kwh: 'IBL_MAIN_KWH',
+}, {
+  pr: 'IBL_CHILLER1_PR',
+  kwh: 'IBL_CHILLER1_KWH',
+}, {
+  pr: 'IBL_CHILLER2_PR',
+  kwh: 'IBL_CHILLER2_KWH',
+}, {
+  pr: 'IBL_ROOF_PR',
+  kwh: 'IBL_ROOF_KWH',
+}, {
+  pr: 'IBL_GROUNDFLOOR_PR',
+  kwh: 'IBL_GROUNDFLOOR_KWH',
+}, {
+  pr: 'IBL_FLOOR1_PR',
+  kwh: 'IBL_FLOOR1_KWH',
+}, {
+  pr: 'IBL_FLOOR2_PR',
+  kwh: 'IBL_FLOOR2_KWH',
+}, {
+  pr: 'IBL_FLOOR3_PR',
+  kwh: 'IBL_FLOOR3_KWH',
+}, {
+  pr: 'IBL_FLOOR4_PR',
+  kwh: 'IBL_FLOOR4_KWH',
+}, {
+  pr: 'IBL_FLOOR5_PR',
+  kwh: 'IBL_FLOOR5_KWH',
+}, {
+  pr: 'IBL_FLOOR6_PR',
+  kwh: 'IBL_FLOOR6_KWH',
+}];
