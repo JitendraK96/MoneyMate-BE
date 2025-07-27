@@ -1,11 +1,5 @@
 const {
-  APP_CLAUDE_API_KEY,
-  APP_CLAUDE_MESSAGE_URL,
-  APP_CLAUDE_BATCH_URL,
   DEFAULT_MODEL,
-  IMAGE_MAX_WIDTH,
-  IMAGE_MAX_HEIGHT,
-  IMAGE_COMPRESSION_QUALITY,
   RATE_LIMIT_PER_MINUTE,
   DAILY_COST_LIMIT,
   MONTHLY_COST_LIMIT,
@@ -14,16 +8,18 @@ const {
   ENABLE_CACHE,
   ENABLE_IMAGE_OPTIMIZATION,
   ENABLE_COST_TRACKING,
-  API_TIMEOUT,
-  RETRY_ATTEMPTS,
-  RETRY_DELAY,
   CLAUDE_PRICING,
   USD_TO_INR_RATE,
+  APP_CLAUDE_API_KEY,
+  APP_CLAUDE_MESSAGE_URL,
+  API_TIMEOUT,
 } = require("../config");
 
 const sharp = require("sharp");
 const NodeCache = require("node-cache");
 const crypto = require("crypto");
+const https = require("https");
+const { PDFDocument } = require("pdf-lib");
 
 // Initialize cache
 const cache = ENABLE_CACHE
@@ -181,336 +177,319 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// Image optimization
-const optimizeImage = async (base64Data, imageType) => {
-  console.log("🔍 Optimizing image...", !ENABLE_IMAGE_OPTIMIZATION);
-  if (!ENABLE_IMAGE_OPTIMIZATION) {
-    return {
-      data: base64Data,
-      type: imageType,
-      compressed: false,
-      message: "Image optimization disabled",
-    };
-  }
-
+// PDF splitting helper function
+const splitPDFIntoChunks = async (pdfBuffer, pagesPerChunk = 2) => {
   try {
-    const buffer = Buffer.from(base64Data, "base64");
-    const originalSize = buffer.length;
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const totalPages = pdfDoc.getPageCount();
+    const chunks = [];
 
-    const optimized = await sharp(buffer)
-      .resize(IMAGE_MAX_WIDTH, IMAGE_MAX_HEIGHT, {
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .jpeg({ quality: IMAGE_COMPRESSION_QUALITY })
-      .toBuffer();
+    console.log(`Splitting PDF: ${totalPages} pages into chunks of ${pagesPerChunk} pages`);
 
-    const compressionRatio =
-      ((originalSize - optimized.length) / originalSize) * 100;
+    for (let i = 0; i < totalPages; i += pagesPerChunk) {
+      const newPdf = await PDFDocument.create();
+      const endPage = Math.min(i + pagesPerChunk, totalPages);
+      
+      // Copy pages to new document
+      const pageIndices = Array.from({length: endPage - i}, (_, idx) => i + idx);
+      const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
+      
+      copiedPages.forEach((page) => newPdf.addPage(page));
+      
+      const pdfBytes = await newPdf.save();
+      chunks.push({
+        buffer: Buffer.from(pdfBytes),
+        pageRange: `${i + 1}-${endPage}`,
+        chunkIndex: Math.floor(i / pagesPerChunk)
+      });
+    }
 
-    console.log(
-      `📸 Image optimized: ${originalSize} → ${
-        optimized.length
-      } bytes (${compressionRatio.toFixed(1)}% reduction)`
-    );
-
-    return {
-      data: optimized.toString("base64"),
-      type: "image/jpeg",
-      compressed: true,
-      originalSize,
-      optimizedSize: optimized.length,
-      compressionRatio,
-      tokensSaved: Math.floor((originalSize - optimized.length) / 4), // Rough estimate
-    };
+    return chunks;
   } catch (error) {
-    console.error("Image optimization failed:", error);
-    // Fallback to original if optimization fails
-    return {
-      data: base64Data,
-      type: imageType,
-      compressed: false,
-      error: error.message,
-      fallback: true,
+    console.error("Error splitting PDF:", error);
+    throw new Error(`Failed to split PDF: ${error.message}`);
+  }
+};
+
+// Claude API helper function
+const callClaudeAPI = async (messages, model = DEFAULT_MODEL) => {
+  if (!APP_CLAUDE_API_KEY) {
+    throw new Error("Claude API key not configured");
+  }
+
+  await rateLimiter.throttle();
+
+  const modelName =
+    model === "haiku"
+      ? "claude-3-5-haiku-20241022"
+      : "claude-3-5-sonnet-20241022";
+
+  const payload = {
+    model: modelName,
+    max_tokens: 8192,
+    messages,
+    temperature: 0,
+  };
+
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(payload);
+
+    const options = {
+      hostname: "api.anthropic.com",
+      port: 443,
+      path: "/v1/messages",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data),
+        "x-api-key": APP_CLAUDE_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      timeout: API_TIMEOUT,
     };
-  }
-};
 
-// Optimized prompt generator
-const getOptimizedPrompt = (customPrompt) => {
-  if (customPrompt && customPrompt.trim()) {
-    return customPrompt;
-  }
+    const req = https.request(options, (res) => {
+      let responseData = "";
 
-  return `Extract debit transactions from this bank statement. Return JSON:
-{
-  "transactions": [
-    {
-      "date": "DD-MM-YYYY",
-      "amount": number,
-      "payee": "string"
-    }
-  ]
-}
+      res.on("data", (chunk) => {
+        responseData += chunk;
+      });
 
-Rules:
-- Only debits (outgoing money)
-- Date format: DD-MM-YYYY  
-- Amount as number only
-- Include payee name
-- Valid JSON only`;
-};
+      res.on("end", () => {
+        try {
+          const response = JSON.parse(responseData);
 
-// Retry logic with exponential backoff
-const retryWithBackoff = async (fn, maxRetries = RETRY_ATTEMPTS) => {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (i === maxRetries - 1) throw error;
+          if (res.statusCode !== 200) {
+            reject(
+              new Error(
+                `Claude API returned ${res.statusCode}: ${
+                  response.error?.message || responseData
+                }`
+              )
+            );
+            return;
+          }
 
-      // Don't retry on certain errors
-      if (
-        error.message.includes("401") ||
-        error.message.includes("403") ||
-        error.message.includes("cost limit")
-      ) {
-        throw error;
-      }
+          // Track usage
+          if (response.usage) {
+            const usage = costTracker.trackUsage(
+              response.usage.input_tokens,
+              response.usage.output_tokens,
+              model
+            );
+            response.costTracking = usage;
+          }
 
-      const delay = Math.min(RETRY_DELAY * Math.pow(2, i), 10000); // Max 10s delay
-      console.log(`⏳ Retry ${i + 1}/${maxRetries} after ${delay}ms`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-};
-
-// Main analyze function (updated from your original)
-const analyzeStatement = async ({
-  prompt,
-  imageType,
-  base64Data,
-  model = DEFAULT_MODEL,
-}) => {
-  const startTime = Date.now();
-
-  try {
-    // Generate cache key
-    const cacheKey = crypto
-      .createHash("md5")
-      .update(base64Data + (prompt || "") + model)
-      .digest("hex");
-
-    // Check cache first
-    if (cache && ENABLE_CACHE) {
-      const cached = cache.get(cacheKey);
-      if (cached) {
-        console.log("💾 Cache hit for image analysis");
-        return {
-          ...cached,
-          cached: true,
-          processingTime: Date.now() - startTime,
-        };
-      }
-    }
-
-    // Rate limiting
-    await rateLimiter.throttle();
-
-    // Optimize image
-    const optimizedImage = await optimizeImage(base64Data, imageType);
-
-    // Get optimized prompt
-    const finalPrompt = getOptimizedPrompt(prompt);
-
-    // Prepare API request
-    const makeRequest = async () => {
-      const modelName = "claude-3-5-sonnet-20241022";
-      const maxTokens = 4000;
-
-      console.log(`🤖 Using ${modelName} with max_tokens: ${maxTokens}`);
-
-      const requestBody = {
-        model: modelName,
-        max_tokens: maxTokens,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: finalPrompt },
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: optimizedImage.type,
-                  data: optimizedImage.data,
-                },
-              },
-            ],
-          },
-        ],
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
-
-      try {
-        const anthropicResponse = await fetch(APP_CLAUDE_MESSAGE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": APP_CLAUDE_API_KEY,
-            "anthropic-version": "2023-06-01",
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!anthropicResponse.ok) {
-          const err = await anthropicResponse.text();
-          throw new Error(
-            `Claude API returned ${anthropicResponse.status}: ${err}`
+          resolve(response);
+        } catch (error) {
+          reject(
+            new Error(`Failed to parse Claude API response: ${error.message}`)
           );
         }
-
-        return anthropicResponse.json();
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
-    };
-
-    // Make request with retry logic
-    const data = await retryWithBackoff(makeRequest);
-    const content = data.content[0].text;
-
-    // Track usage and cost
-    const usage = data.usage || {};
-    const costInfo = costTracker.trackUsage(
-      usage.input_tokens || 0,
-      usage.output_tokens || 0,
-      model
-    );
-
-    const result = {
-      content,
-      usage,
-      cost: costInfo,
-      optimization: optimizedImage,
-      model: model === "haiku" ? "claude-3-5-haiku" : "claude-3-5-sonnet",
-      cached: false,
-      processingTime: Date.now() - startTime,
-      prompt: finalPrompt,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Cache the result
-    if (cache && ENABLE_CACHE) {
-      cache.set(cacheKey, result);
-      console.log("💾 Result cached for future requests");
-    }
-
-    console.log(
-      `✅ Analysis complete: ${
-        result.processingTime
-      }ms, $${costInfo.cost.toFixed(6)}`
-    );
-
-    return result;
-  } catch (error) {
-    const processingTime = Date.now() - startTime;
-    console.error(
-      `❌ Analysis failed after ${processingTime}ms:`,
-      error.message
-    );
-    throw error;
-  }
-};
-
-// Batch processing
-const analyzeStatementsBatch = async ({
-  requests,
-  model = DEFAULT_MODEL,
-  batchSize = 20,
-}) => {
-  const results = [];
-  const totalBatches = Math.ceil(requests.length / batchSize);
-
-  console.log(
-    `📦 Processing ${requests.length} requests in ${totalBatches} batches`
-  );
-  console.log(
-    `🤖 Using model: ${
-      model === "haiku" ? "claude-3-5-haiku" : "claude-3-5-sonnet"
-    }`
-  );
-
-  for (let i = 0; i < requests.length; i += batchSize) {
-    const batch = requests.slice(i, i + batchSize);
-    const batchNumber = Math.floor(i / batchSize) + 1;
-
-    console.log(
-      `⚡ Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`
-    );
-
-    // Process batch in parallel with concurrency control
-    const batchPromises = batch.map(async (request, index) => {
-      try {
-        // Add small delay to prevent overwhelming the API
-        await new Promise((resolve) => setTimeout(resolve, index * 100));
-
-        return await analyzeStatement({
-          prompt: request.prompt || getOptimizedPrompt(),
-          imageType: request.imageType,
-          base64Data: request.base64Data,
-          model,
-        });
-      } catch (error) {
-        console.error(
-          `❌ Batch item ${request.id || index} failed:`,
-          error.message
-        );
-        return {
-          error: error.message,
-          requestId: request.id || `batch_${batchNumber}_${index}`,
-          success: false,
-        };
-      }
+      });
     });
 
-    const batchResults = await Promise.all(batchPromises);
-    results.push(...batchResults);
+    req.on("error", (error) => {
+      reject(new Error(`Claude API request failed: ${error.message}`));
+    });
 
-    // Progress update
-    const successful = batchResults.filter((r) => !r.error).length;
-    const failed = batchResults.filter((r) => r.error).length;
-    console.log(
-      `✅ Batch ${batchNumber} complete: ${successful} success, ${failed} failed`
-    );
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error("Claude API request timed out"));
+    });
 
-    // Delay between batches to respect rate limits
-    if (i + batchSize < requests.length) {
-      console.log("⏳ Waiting before next batch...");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    req.write(data);
+    req.end();
+  });
+};
+
+// Process single PDF chunk
+const processChunk = async (chunkBuffer, chunkInfo) => {
+  const base64Pdf = chunkBuffer.toString("base64");
+  
+  const prompt = `Please analyze this bank statement PDF chunk (pages ${chunkInfo.pageRange}) and extract ONLY the debited transactions (money going out of the account). I need you to identify all transactions where money was deducted/withdrawn from the account.
+
+For each debited transaction, extract the following information:
+1. Transaction date
+2. Debited amount (the money that went out)
+3. Recipient/payee details (who the payment was made to)
+
+Please format your response as a JSON array of objects with exactly these 3 keys:
+- "date": transaction date in DD/MM/YYYY format
+- "amount": debited amount as a number (without currency symbols)
+- "recipient": recipient/payee name or description exactly as it appears in the statement
+
+IMPORTANT: Return ONLY a valid JSON array with no explanatory text, no markdown formatting, no code blocks, and no additional commentary. Your entire response should be parseable JSON.
+
+Instructions:
+- IGNORE all credit transactions, deposits, interest payments, or money coming INTO the account
+- ONLY include transactions where money went OUT of the account
+- For recipient details, extract the EXACT text from the transaction description without any modifications or cleaning
+- Keep all UPI IDs, reference numbers, and technical details exactly as shown
+- If the amount is in a "Withdrawal" or "Debit" column, include it
+- If there are reversals or refunds, exclude them unless specifically debited
+
+Example format:
+[
+  {
+    "date": "01/04/2025",
+    "amount": 40.00,
+    "recipient": "UPI-AKANSHA NARAYAN SHRI-7558422945-2@AX L-IPOS0000001-496106031655-PAYMENT FROM PHONE"
+  },
+  {
+    "date": "04/04/2025", 
+    "amount": 28265.00,
+    "recipient": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB000011 4-546051192328-PAYMENT ON CRED"
+  }
+]
+
+Please analyze this chunk and provide the complete list of debited transactions found in this format.`;
+
+  const messages = [
+    {
+      role: "user",
+      content: [
+        {
+          type: "text",
+          text: prompt,
+        },
+        {
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: "application/pdf",
+            data: base64Pdf,
+          },
+        },
+      ],
+    },
+  ];
+
+  const response = await callClaudeAPI(messages, "sonnet");
+
+  if (!response.content || !response.content[0] || !response.content[0].text) {
+    throw new Error("Invalid response from Claude API");
+  }
+
+  const responseText = response.content[0].text.trim();
+  
+  console.log(`Chunk ${chunkInfo.pageRange} response length: ${responseText.length} characters`);
+
+  // Try to parse JSON from the response
+  let transactions;
+  try {
+    let jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    
+    if (jsonMatch) {
+      let jsonString = jsonMatch[0];
+      
+      if (!jsonString.endsWith(']')) {
+        const lastCommaIndex = jsonString.lastIndexOf(',');
+        if (lastCommaIndex > 0) {
+          jsonString = jsonString.substring(0, lastCommaIndex) + ']';
+        } else {
+          jsonString += ']';
+        }
+      }
+      
+      transactions = JSON.parse(jsonString);
+    } else {
+      transactions = JSON.parse(responseText);
+    }
+  } catch (parseError) {
+    try {
+      const objectMatches = responseText.match(/\{[^{}]*"date"[^{}]*\}/g);
+      if (objectMatches && objectMatches.length > 0) {
+        transactions = objectMatches.map(obj => JSON.parse(obj));
+      } else {
+        console.warn(`No transactions found in chunk ${chunkInfo.pageRange}`);
+        return [];
+      }
+    } catch (secondaryError) {
+      console.error(`Failed to parse chunk ${chunkInfo.pageRange}:`, parseError.message);
+      return [];
     }
   }
 
-  const totalSuccessful = results.filter((r) => !r.error).length;
-  const totalFailed = results.filter((r) => r.error).length;
-  const totalCost = results.reduce((sum, r) => sum + (r.cost?.cost || 0), 0);
+  if (!Array.isArray(transactions)) {
+    console.warn(`Invalid response format for chunk ${chunkInfo.pageRange}`);
+    return [];
+  }
 
-  console.log(
-    `🎉 Batch processing complete: ${totalSuccessful}/${results.length} successful`
-  );
-  console.log(
-    `💰 Total cost: $${totalCost.toFixed(4)} (₹${(
-      totalCost * USD_TO_INR_RATE
-    ).toFixed(2)})`
-  );
+  return transactions;
+};
 
-  return results;
+// Extract debit transactions from PDF with batch processing
+const extractDebitTransactions = async (pdfBuffer) => {
+  try {
+    // Create cache key based on PDF content
+    const pdfHash = crypto.createHash("md5").update(pdfBuffer).digest("hex");
+    const cacheKey = `debit_transactions_${pdfHash}`;
+
+    // Check cache first
+    if (cache && cache.has(cacheKey)) {
+      console.log("Returning cached result for PDF analysis");
+      return cache.get(cacheKey);
+    }
+
+    // Split PDF into smaller chunks for processing
+    const chunks = await splitPDFIntoChunks(pdfBuffer, 2); // 2 pages per chunk
+    console.log(`Processing ${chunks.length} chunks`);
+
+    // Process all chunks
+    const allTransactions = [];
+    
+    for (let i = 0; i < chunks.length; i++) {
+      console.log(`Processing chunk ${i + 1}/${chunks.length} (pages ${chunks[i].pageRange})`);
+      
+      try {
+        const chunkTransactions = await processChunk(chunks[i].buffer, chunks[i]);
+        
+        if (chunkTransactions.length > 0) {
+          allTransactions.push(...chunkTransactions);
+          console.log(`Found ${chunkTransactions.length} transactions in chunk ${chunks[i].pageRange}`);
+        }
+      } catch (chunkError) {
+        console.error(`Error processing chunk ${chunks[i].pageRange}:`, chunkError.message);
+        // Continue with other chunks
+      }
+    }
+
+    // Validate and deduplicate transactions
+    const validatedTransactions = allTransactions.filter((transaction) => {
+      return (
+        transaction &&
+        typeof transaction === "object" &&
+        transaction.date &&
+        (transaction.recipient || transaction.payee) &&
+        typeof transaction.amount === "number" &&
+        transaction.amount > 0
+      );
+    });
+
+    // Simple deduplication based on date, amount, and recipient
+    const uniqueTransactions = validatedTransactions.filter((transaction, index, array) => {
+      return index === array.findIndex(t => 
+        t.date === transaction.date && 
+        t.amount === transaction.amount && 
+        (t.recipient === transaction.recipient || t.payee === transaction.payee)
+      );
+    });
+    
+    console.log(`Total transactions found: ${allTransactions.length}`);
+    console.log(`After validation: ${validatedTransactions.length}`);
+    console.log(`After deduplication: ${uniqueTransactions.length}`);
+
+    // Cache the result
+    if (cache && uniqueTransactions.length > 0) {
+      cache.set(cacheKey, uniqueTransactions);
+    }
+
+    return uniqueTransactions;
+  } catch (error) {
+    console.error("Error extracting debit transactions:", error);
+    throw error;
+  }
 };
 
 // Health metrics
@@ -550,37 +529,7 @@ const getHealthMetrics = async () => {
     version: "2.0-optimized",
   };
 };
-
-// Batch status placeholder (for future Claude Batch API)
-const getBatchStatus = async (batchId) => {
-  return {
-    batchId,
-    status: "completed",
-    message: "Batch processing completed successfully",
-    note: "This is a placeholder for future Claude Batch API integration",
-  };
-};
-
-// Utility functions
-const clearCache = () => {
-  if (cache) {
-    cache.flushAll();
-    console.log("🗑️  Cache cleared");
-  }
-};
-
-const resetCostTracker = () => {
-  costTracker.reset();
-  console.log("💰 Cost tracker reset");
-};
-
 module.exports = {
-  analyzeStatement,
-  analyzeStatementsBatch,
   getHealthMetrics,
-  getBatchStatus,
-  clearCache,
-  resetCostTracker,
-  costTracker,
-  rateLimiter,
+  extractDebitTransactions,
 };
