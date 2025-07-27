@@ -1,5 +1,6 @@
 const express = require("express");
 const { analyzeController } = require("../controllers");
+const { extractUserId } = require("../middleware/auth.middleware");
 
 const multer = require("multer");
 
@@ -21,5 +22,7 @@ const upload = multer({
 
 analyzeRoutes.get("/health", analyzeController.healthCheck);
 analyzeRoutes.post("/statement", upload.single("pdf"), analyzeController.extractDebitTransactions);
+analyzeRoutes.post("/statement/async", extractUserId, upload.single("pdf"), analyzeController.extractDebitTransactionsAsync);
+analyzeRoutes.get("/status/:jobId", extractUserId, analyzeController.getJobStatus);
 
 module.exports = analyzeRoutes;

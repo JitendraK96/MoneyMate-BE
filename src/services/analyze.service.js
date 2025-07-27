@@ -20,6 +20,11 @@ const NodeCache = require("node-cache");
 const crypto = require("crypto");
 const https = require("https");
 const { PDFDocument } = require("pdf-lib");
+const {
+  createProcessingJob,
+  updateProcessingJob,
+  JOB_STATUS,
+} = require("./database.service");
 
 // Initialize cache
 const cache = ENABLE_CACHE
@@ -184,23 +189,28 @@ const splitPDFIntoChunks = async (pdfBuffer, pagesPerChunk = 2) => {
     const totalPages = pdfDoc.getPageCount();
     const chunks = [];
 
-    console.log(`Splitting PDF: ${totalPages} pages into chunks of ${pagesPerChunk} pages`);
+    console.log(
+      `Splitting PDF: ${totalPages} pages into chunks of ${pagesPerChunk} pages`
+    );
 
     for (let i = 0; i < totalPages; i += pagesPerChunk) {
       const newPdf = await PDFDocument.create();
       const endPage = Math.min(i + pagesPerChunk, totalPages);
-      
+
       // Copy pages to new document
-      const pageIndices = Array.from({length: endPage - i}, (_, idx) => i + idx);
+      const pageIndices = Array.from(
+        { length: endPage - i },
+        (_, idx) => i + idx
+      );
       const copiedPages = await newPdf.copyPages(pdfDoc, pageIndices);
-      
+
       copiedPages.forEach((page) => newPdf.addPage(page));
-      
+
       const pdfBytes = await newPdf.save();
       chunks.push({
         buffer: Buffer.from(pdfBytes),
         pageRange: `${i + 1}-${endPage}`,
-        chunkIndex: Math.floor(i / pagesPerChunk)
+        chunkIndex: Math.floor(i / pagesPerChunk),
       });
     }
 
@@ -306,8 +316,8 @@ const callClaudeAPI = async (messages, model = DEFAULT_MODEL) => {
 // Process single PDF chunk
 const processChunk = async (chunkBuffer, chunkInfo) => {
   const base64Pdf = chunkBuffer.toString("base64");
-  
-  const prompt = `Please analyze this bank statement PDF chunk (pages ${chunkInfo.pageRange}) and extract ONLY the debited transactions (money going out of the account). I need you to identify all transactions where money was deducted/withdrawn from the account.
+
+  const prompt = `Please analyze this bank statement PDF and extract ONLY the debited transactions (money going out of the account). I need you to identify all transactions where money was deducted/withdrawn from the account.
 
 For each debited transaction, extract the following information:
 1. Transaction date
@@ -343,7 +353,7 @@ Example format:
   }
 ]
 
-Please analyze this chunk and provide the complete list of debited transactions found in this format.`;
+Please analyze the entire statement and provide the complete list of debited transactions in this format.`;
 
   const messages = [
     {
@@ -372,26 +382,28 @@ Please analyze this chunk and provide the complete list of debited transactions 
   }
 
   const responseText = response.content[0].text.trim();
-  
-  console.log(`Chunk ${chunkInfo.pageRange} response length: ${responseText.length} characters`);
+
+  console.log(
+    `Chunk ${chunkInfo.pageRange} response length: ${responseText.length} characters`
+  );
 
   // Try to parse JSON from the response
   let transactions;
   try {
     let jsonMatch = responseText.match(/\[[\s\S]*\]/);
-    
+
     if (jsonMatch) {
       let jsonString = jsonMatch[0];
-      
-      if (!jsonString.endsWith(']')) {
-        const lastCommaIndex = jsonString.lastIndexOf(',');
+
+      if (!jsonString.endsWith("]")) {
+        const lastCommaIndex = jsonString.lastIndexOf(",");
         if (lastCommaIndex > 0) {
-          jsonString = jsonString.substring(0, lastCommaIndex) + ']';
+          jsonString = jsonString.substring(0, lastCommaIndex) + "]";
         } else {
-          jsonString += ']';
+          jsonString += "]";
         }
       }
-      
+
       transactions = JSON.parse(jsonString);
     } else {
       transactions = JSON.parse(responseText);
@@ -400,13 +412,16 @@ Please analyze this chunk and provide the complete list of debited transactions 
     try {
       const objectMatches = responseText.match(/\{[^{}]*"date"[^{}]*\}/g);
       if (objectMatches && objectMatches.length > 0) {
-        transactions = objectMatches.map(obj => JSON.parse(obj));
+        transactions = objectMatches.map((obj) => JSON.parse(obj));
       } else {
         console.warn(`No transactions found in chunk ${chunkInfo.pageRange}`);
         return [];
       }
     } catch (secondaryError) {
-      console.error(`Failed to parse chunk ${chunkInfo.pageRange}:`, parseError.message);
+      console.error(
+        `Failed to parse chunk ${chunkInfo.pageRange}:`,
+        parseError.message
+      );
       return [];
     }
   }
@@ -438,19 +453,31 @@ const extractDebitTransactions = async (pdfBuffer) => {
 
     // Process all chunks
     const allTransactions = [];
-    
+
     for (let i = 0; i < chunks.length; i++) {
-      console.log(`Processing chunk ${i + 1}/${chunks.length} (pages ${chunks[i].pageRange})`);
-      
+      console.log(
+        `Processing chunk ${i + 1}/${chunks.length} (pages ${
+          chunks[i].pageRange
+        })`
+      );
+
       try {
-        const chunkTransactions = await processChunk(chunks[i].buffer, chunks[i]);
-        
+        const chunkTransactions = await processChunk(
+          chunks[i].buffer,
+          chunks[i]
+        );
+
         if (chunkTransactions.length > 0) {
           allTransactions.push(...chunkTransactions);
-          console.log(`Found ${chunkTransactions.length} transactions in chunk ${chunks[i].pageRange}`);
+          console.log(
+            `Found ${chunkTransactions.length} transactions in chunk ${chunks[i].pageRange}`
+          );
         }
       } catch (chunkError) {
-        console.error(`Error processing chunk ${chunks[i].pageRange}:`, chunkError.message);
+        console.error(
+          `Error processing chunk ${chunks[i].pageRange}:`,
+          chunkError.message
+        );
         // Continue with other chunks
       }
     }
@@ -468,14 +495,21 @@ const extractDebitTransactions = async (pdfBuffer) => {
     });
 
     // Simple deduplication based on date, amount, and recipient
-    const uniqueTransactions = validatedTransactions.filter((transaction, index, array) => {
-      return index === array.findIndex(t => 
-        t.date === transaction.date && 
-        t.amount === transaction.amount && 
-        (t.recipient === transaction.recipient || t.payee === transaction.payee)
-      );
-    });
-    
+    const uniqueTransactions = validatedTransactions.filter(
+      (transaction, index, array) => {
+        return (
+          index ===
+          array.findIndex(
+            (t) =>
+              t.date === transaction.date &&
+              t.amount === transaction.amount &&
+              (t.recipient === transaction.recipient ||
+                t.payee === transaction.payee)
+          )
+        );
+      }
+    );
+
     console.log(`Total transactions found: ${allTransactions.length}`);
     console.log(`After validation: ${validatedTransactions.length}`);
     console.log(`After deduplication: ${uniqueTransactions.length}`);
@@ -529,7 +563,163 @@ const getHealthMetrics = async () => {
     version: "2.0-optimized",
   };
 };
+// Async version of extractDebitTransactions with database tracking
+const extractDebitTransactionsAsync = async (
+  pdfBuffer,
+  fileName,
+  fileSize,
+  userId
+) => {
+  let job = null;
+
+  try {
+    if (!userId) {
+      throw new Error("User ID is required");
+    }
+
+    // Get PDF info first
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const totalPages = pdfDoc.getPageCount();
+    const chunksTotal = Math.ceil(totalPages / 2); // 2 pages per chunk
+
+    // Create job in database
+    job = await createProcessingJob({
+      userId,
+      fileName,
+      fileSize,
+      totalPages,
+      chunksTotal,
+    });
+
+    // Start processing in background
+    processJobAsync(job.id, pdfBuffer);
+
+    return job;
+  } catch (error) {
+    if (job) {
+      await updateProcessingJob(job.id, {
+        status: JOB_STATUS.FAILED,
+        error_message: error.message,
+      });
+    }
+    throw error;
+  }
+};
+
+// Background processing function
+const processJobAsync = async (jobId, pdfBuffer) => {
+  try {
+    // Update status to processing
+    await updateProcessingJob(jobId, {
+      status: JOB_STATUS.PROCESSING,
+    });
+
+    // Split PDF into chunks
+    const chunks = await splitPDFIntoChunks(pdfBuffer, 2);
+
+    await updateProcessingJob(jobId, {
+      chunks_total: chunks.length,
+    });
+
+    console.log(`Job ${jobId}: Processing ${chunks.length} chunks`);
+
+    // Process all chunks
+    const allTransactions = [];
+    let chunksProcessed = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      try {
+        console.log(
+          `Job ${jobId}: Processing chunk ${i + 1}/${chunks.length} (pages ${
+            chunks[i].pageRange
+          })`
+        );
+
+        const chunkTransactions = await processChunk(
+          chunks[i].buffer,
+          chunks[i]
+        );
+
+        if (chunkTransactions.length > 0) {
+          allTransactions.push(...chunkTransactions);
+          console.log(
+            `Job ${jobId}: Found ${chunkTransactions.length} transactions in chunk ${chunks[i].pageRange}`
+          );
+        }
+
+        chunksProcessed++;
+
+        // Update progress
+        await updateProcessingJob(jobId, {
+          chunks_processed: chunksProcessed,
+          total_transactions: allTransactions.length,
+        });
+      } catch (chunkError) {
+        console.error(
+          `Job ${jobId}: Error processing chunk ${chunks[i].pageRange}:`,
+          chunkError.message
+        );
+        chunksProcessed++;
+
+        await updateProcessingJob(jobId, {
+          chunks_processed: chunksProcessed,
+        });
+      }
+    }
+
+    // Validate and deduplicate transactions
+    const validatedTransactions = allTransactions.filter((transaction) => {
+      return (
+        transaction &&
+        typeof transaction === "object" &&
+        transaction.date &&
+        (transaction.recipient || transaction.payee) &&
+        typeof transaction.amount === "number" &&
+        transaction.amount > 0
+      );
+    });
+
+    // Simple deduplication
+    const uniqueTransactions = validatedTransactions.filter(
+      (transaction, index, array) => {
+        return (
+          index ===
+          array.findIndex(
+            (t) =>
+              t.date === transaction.date &&
+              t.amount === transaction.amount &&
+              (t.recipient === transaction.recipient ||
+                t.payee === transaction.payee)
+          )
+        );
+      }
+    );
+
+    console.log(
+      `Job ${jobId}: Total: ${allTransactions.length}, Validated: ${validatedTransactions.length}, Final: ${uniqueTransactions.length}`
+    );
+
+    // Update job as completed
+    await updateProcessingJob(jobId, {
+      status: JOB_STATUS.COMPLETED,
+      total_transactions: allTransactions.length,
+      validated_transactions: validatedTransactions.length,
+      final_transactions: uniqueTransactions.length,
+      result: uniqueTransactions,
+      progress_percentage: 100.0,
+    });
+  } catch (error) {
+    console.error(`Job ${jobId}: Processing failed:`, error);
+
+    await updateProcessingJob(jobId, {
+      status: JOB_STATUS.FAILED,
+      error_message: error.message,
+    });
+  }
+};
+
 module.exports = {
   getHealthMetrics,
   extractDebitTransactions,
+  extractDebitTransactionsAsync,
 };
