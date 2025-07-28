@@ -229,10 +229,7 @@ const callClaudeAPI = async (messages, model = DEFAULT_MODEL) => {
 
   await rateLimiter.throttle();
 
-  const modelName =
-    model === "haiku"
-      ? "claude-3-5-haiku-20241022"
-      : "claude-3-5-sonnet-20241022";
+  const modelName = "claude-sonnet-4-20250514";
 
   const payload = {
     model: modelName,
